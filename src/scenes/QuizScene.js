@@ -26,7 +26,7 @@ const QUIZ_DATA = [
   {
     badgeImg: "q3",
     questionImg: "q3",
-    questionText: 'Who is Puss In Boots\'\s\nmost trusted companion?',
+    questionText: 'Who is a sidekick of Puss In Boots?',
     options: [
       { img: "q3_option A", correct: true },
       { img: "q3_option B", correct: false },
@@ -57,6 +57,8 @@ export default class QuizScene extends Phaser.Scene {
     this.load.image("q3_option A", "assets/q3_option A.png");
     this.load.image("q3_option B", "assets/q3_option B.png");
     this.load.image("btn_next", "assets/btn_next.png");
+    this.load.image("btn_letsgo", "assets/btn_letsgo.png");
+    this.load.image("next challenge", "assets/next challenge.png");
     this.load.script('webfont', 'https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js');
   }
 
@@ -91,7 +93,7 @@ export default class QuizScene extends Phaser.Scene {
 
   showHeader() {
     const { width } = this.sys.game.canvas;
-    const header = this.add.text(width / 2, 130, 'Quiz Time!\nCan you answer these questions?', {
+    this.quizHeader = this.add.text(width / 2, 130, 'Quiz Time!\nCan you answer these questions?', {
       fontFamily: 'Caslon3LTStd',
       fontSize: '40px',
       color: '#fad105',
@@ -102,8 +104,8 @@ export default class QuizScene extends Phaser.Scene {
       lineSpacing: 6,
       padding: { x: 0, y: 45 },
     }).setOrigin(0.5, 0);
-    header.setAlpha(0);
-    this.tweens.add({ targets: header, alpha: 1, duration: 600, delay: 200, ease: 'Sine.easeIn' });
+    this.quizHeader.setAlpha(0);
+    this.tweens.add({ targets: this.quizHeader, alpha: 1, duration: 600, delay: 200, ease: 'Sine.easeIn' });
   }
 
   showQuestion() {
@@ -131,7 +133,7 @@ export default class QuizScene extends Phaser.Scene {
       align: 'center',
       lineSpacing: 8 * scaleFactor,
       wordWrap: { width: width * 0.7 },
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 1.2);
     qText.setAlpha(0);
     this.tweens.add({ targets: qText, alpha: 1, duration: 500, delay: 400, ease: 'Sine.easeIn' });
     // Option images
@@ -247,62 +249,88 @@ export default class QuizScene extends Phaser.Scene {
 
   showScore() {
     const { width, height } = this.sys.game.canvas;
-    const boxY = height / 2 + 100;
-    const box = this.add.image(width / 2, boxY, "question_box").setDisplaySize(width * 0.8, height * 0.45);
-    const badgeY = boxY - box.displayHeight / 2 - 20;
-    const badgeBg = this.add.graphics();
-    badgeBg.fillStyle(0xf7d08a, 1).fillRoundedRect(width / 2 - 48, badgeY - 28, 96, 56, 16).lineStyle(4, 0xaf7e2d, 1).strokeRoundedRect(width / 2 - 48, badgeY - 28, 96, 56, 16);
-    const badge = this.add.text(width / 2, badgeY, 'Score', {
-      fontFamily: 'Caslon3LTStd, serif',
-      fontSize: '32px',
-      color: '#af7e2d',
+    const scaleFactor = Math.min(width / 800, height / 1200);
+    // Remove any lingering header or question elements
+    if (this.cleared) this.cleared();
+    // Remove Quiz Time header if present
+    if (this.quizHeader) { this.quizHeader.destroy(); this.quizHeader = null; }
+    // Congratulatory text
+    const congrats = this.add.text(width / 2, 200 * scaleFactor, 'Great job on the quiz!\nYour correct answers are', {
+      fontFamily: 'Caslon3LTStd',
+      fontSize: `${Math.round(38 * scaleFactor)}px`,
+      color: '#fad105',
+      align: 'center',
+      fontStyle: 'bold',
+      stroke: '#000',
+      strokeThickness: 2 * scaleFactor,
+      lineSpacing: 8 * scaleFactor,
+    }).setOrigin(0.5, 0.25);
+    // Score
+    const scoreText = this.add.text(width / 2, 270 * scaleFactor, `${this.score}/${QUIZ_DATA.length}`, {
+      fontFamily: 'BigCaslon, serif',
+      fontSize: `${Math.round(80 * scaleFactor)}px`,
+      color: '#fff8e1',
       fontStyle: 'bold',
       align: 'center',
-      stroke: '#af7e2d',
-      strokeThickness: 2,
-    }).setOrigin(0.5, 0.5);
-    const scoreText = this.add.text(width / 2, boxY, `Your Score: ${this.score}/${QUIZ_DATA.length}`, {
-      fontFamily: 'BigCaslon, serif',
-      fontSize: "38px",
-      color: "#fff8e1",
-      fontStyle: "bold",
-      align: 'center',
       stroke: '#000',
-      strokeThickness: 2,
-    }).setOrigin(0.5, 0.5);
-    const continueBtnBg = this.add.graphics()
-      .fillStyle(0xb8860b, 1)
-      .fillRoundedRect(-80, -25, 160, 50, 25)
-      .setPosition(width / 2, boxY + 80);
-    const continueBtnText = this.add.text(width / 2, boxY + 80, "Continue", {
-      fontFamily: 'BigCaslon, serif',
-      fontSize: "32px",
-      color: "#fff8e1",
-      fontStyle: "bold",
-      align: 'center',
-    }).setOrigin(0.5, 0.5);
-    const continueHitArea = new Phaser.Geom.Rectangle(-80, -25, 160, 50);
-    continueBtnBg.setInteractive(continueHitArea, Phaser.Geom.Rectangle.Contains, { useHandCursor: true });
-    continueBtnBg.on("pointerdown", () => {
-      this.scene.start("MemoryCardScene");
+      strokeThickness: 4 * scaleFactor,
+    }).setOrigin(0.5, -0.75);
+    // Parchment background
+    const parchment = this.add.image(width / 2, 480 * scaleFactor, 'next challenge').setOrigin(0.5, 0).setScale(4.5 * scaleFactor);
+    parchment.setDisplaySize(width * 0.9, height * 0.4);
+    // Challenge heading
+    // const challengeHeading = this.add.text(width / 2, 410 * scaleFactor, '', {
+    //   fontFamily: 'BigCaslon, serif',
+    //   fontSize: `${Math.round(32 * scaleFactor)}px`,
+    //   color: '#222',
+    //   fontStyle: 'bold',
+    //   align: 'center',
+    //   stroke: '#fff8e1',
+    //   strokeThickness: 0,
+    // }).setOrigin(0.5, 0.5);
+    // // Challenge description
+    // const challengeDesc = this.add.text(width / 2, 480 * scaleFactor, '', {
+    //   fontFamily: 'MinionPro, serif',
+    //   fontSize: `${Math.round(26 * scaleFactor)}px`,
+    //   color: '#222',
+    //   align: 'center',
+    //   wordWrap: { width: width * 0.5 },
+    //   lineSpacing: 6 * scaleFactor,
+      
+    // })
+    // .setOrigin(0.5, -2.5)
+    // .setScale(1.4 * scaleFactor);
+    // Let's go button
+    const letsGoBtn = this.add.image(width / 2, 650 * scaleFactor, 'btn_letsgo')
+      .setInteractive({ useHandCursor: true })
+      .setOrigin(0.5, -2.3)
+      .setScale(1.5 * scaleFactor);
+    letsGoBtn.on('pointerover', () => {
+      this.tweens.add({
+        targets: letsGoBtn,
+        scale: 1.18 * scaleFactor,
+        duration: 180,
+        ease: 'Sine.easeInOut',
+      });
+      letsGoBtn.setTint(0xffffaa);
     });
-    continueBtnBg.on('pointerover', () => {
-      continueBtnBg.clear();
-      continueBtnBg.fillStyle(0xdaa520, 1);
-      continueBtnBg.fillRoundedRect(-80, -25, 160, 50, 25);
+    letsGoBtn.on('pointerout', () => {
+      this.tweens.add({
+        targets: letsGoBtn,
+        scale: 1.1 * scaleFactor,
+        duration: 180,
+        ease: 'Sine.easeInOut',
+      });
+      letsGoBtn.clearTint();
     });
-    continueBtnBg.on('pointerout', () => {
-      continueBtnBg.clear();
-      continueBtnBg.fillStyle(0xb8860b, 1);
-      continueBtnBg.fillRoundedRect(-80, -25, 160, 50, 25);
+    letsGoBtn.on('pointerdown', () => {
+      this.scene.start('MemoryCardScene');
     });
     this.cleared = () => {
-      box.destroy();
-      badge.destroy();
-      badgeBg.destroy();
+      congrats.destroy();
       scoreText.destroy();
-      continueBtnBg.destroy();
-      continueBtnText.destroy();
+      parchment.destroy();
+      letsGoBtn.destroy();
       this.cleared = null;
     };
   }
