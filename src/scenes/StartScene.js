@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 
-// Global settings object - đồng bộ với SettingsScene
 window.GameSettings = {
   effects: {
     characterRotation: false,
@@ -77,9 +76,8 @@ export default class StartScene extends Phaser.Scene {
     const loadingBar = this.add.graphics();
     let progress = 0;
     
-    // Animated loading text
     const loadingText = this.add.text(width / 2, height / 2 + 60, '', {
-      font: '28px Arial',
+      font: '28px MinionPro',
       fill: '#ffd700',
       fontWeight: 'bold',
       stroke: '#000000',
@@ -105,7 +103,6 @@ export default class StartScene extends Phaser.Scene {
       particle.y = height / 2 + Math.random() * 40 - 20;
       particles.push(particle);
       
-      // Animate particles
       this.tweens.add({
         targets: particle,
         x: particle.x + (Math.random() - 0.5) * 100,
@@ -118,7 +115,6 @@ export default class StartScene extends Phaser.Scene {
       });
     }
     
-    // Loading bar animation
     this.time.addEvent({
       delay: 12,
       repeat: 83,
@@ -126,11 +122,9 @@ export default class StartScene extends Phaser.Scene {
         progress += 0.012;
         loadingBar.clear();
         
-        // Main loading bar
         loadingBar.fillStyle(0xffd700, 1);
         loadingBar.fillRoundedRect(width / 4 - 5, height / 2 - 5, (width / 2 + 10) * Math.min(progress, 1), 40, 20);
         
-        // Conditional shimmer effect
         if (window.GameSettings.effects.glowEffects) {
           const shimmerPos = (width / 2 + 10) * Math.min(progress, 1);
           loadingBar.fillStyle(0xffffff, 0.6);
