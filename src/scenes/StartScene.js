@@ -21,6 +21,8 @@ export default class StartScene extends Phaser.Scene {
     this.backgroundParticles = [];
     this.dynamicElements = []; // Để theo dõi các elements cần cập nhật
     this.musicInstance = null;
+    this.settingsUpdateTimer = null;
+    this.lastSettings = null; // Lưu trữ settings cũ để so sánh
   }
 
   preload() {
@@ -159,6 +161,9 @@ export default class StartScene extends Phaser.Scene {
   }
 
   create() {
+    // Khởi tạo settings backup để theo dõi thay đổi
+    this.lastSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
+    
     // Khởi tạo background music với volume từ settings
     this.initializeMusic();
     
@@ -181,6 +186,39 @@ export default class StartScene extends Phaser.Scene {
     
     // Lắng nghe sự kiện khi quay lại từ SettingsScene
     this.events.on('wake', this.onWakeFromSettings, this);
+    
+    // Thiết lập timer để kiểm tra thay đổi settings liên tục
+    this.setupSettingsWatcher();
+  }
+  
+  // Thiết lập watcher để theo dõi thay đổi settings real-time
+  setupSettingsWatcher() {
+    this.settingsUpdateTimer = this.time.addEvent({
+      delay: 100, // Kiểm tra mỗi 100ms
+      repeat: -1,
+      callback: () => {
+        if (this.hasSettingsChanged()) {
+          this.updateAllEffects();
+          this.lastSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
+        }
+      }
+    });
+  }
+  
+  // Kiểm tra xem settings có thay đổi không
+  hasSettingsChanged() {
+    if (!this.lastSettings) return false;
+    
+    const currentSettings = window.GameSettings.effects;
+    
+    // So sánh từng thuộc tính
+    for (let key in currentSettings) {
+      if (currentSettings[key] !== this.lastSettings[key]) {
+        return true;
+      }
+    }
+    
+    return false;
   }
   
   initializeMusic() {
@@ -264,6 +302,8 @@ export default class StartScene extends Phaser.Scene {
   }
   
   updateLogoEffects() {
+    if (!this.logo) return;
+    
     // Dừng tất cả tween cũ của logo
     this.tweens.killTweensOf(this.logo);
     
@@ -279,22 +319,34 @@ export default class StartScene extends Phaser.Scene {
         ease: 'Sine.easeInOut'
       });
     } else {
-      this.logo.setPosition(this.sys.game.canvas.width / 2, 120);
-      this.logo.setScale(1.2);
+      // Reset về vị trí cố định
+      this.tweens.add({
+        targets: this.logo,
+        y: 120,
+        scale: 1.2,
+        duration: 300,
+        ease: 'Power2'
+      });
     }
     
     // Glow effect nếu được bật
     if (window.GameSettings.effects.glowEffects) {
       this.tweens.add({
         targets: this.logo,
-        alpha: 0.8,
+        alpha: { from: 1, to: 0.8 },
         duration: 1500,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut'
       });
     } else {
-      this.logo.setAlpha(1);
+      // Reset alpha về 1
+      this.tweens.add({
+        targets: this.logo,
+        alpha: 1,
+        duration: 300,
+        ease: 'Power2'
+      });
     }
   }
   
@@ -395,6 +447,8 @@ export default class StartScene extends Phaser.Scene {
   }
   
   updateCharacterEffects(sprite, shadow, char) {
+    if (!sprite || !shadow) return;
+    
     // Dừng tween cũ
     this.tweens.killTweensOf([sprite, shadow]);
     
@@ -419,8 +473,19 @@ export default class StartScene extends Phaser.Scene {
         delay: 200
       });
     } else {
-      sprite.setPosition(char.targetX, char.targetY);
-      shadow.setPosition(char.targetX + 10, char.targetY + 10);
+      // Reset về vị trí cố định
+      this.tweens.add({
+        targets: sprite,
+        y: char.targetY,
+        duration: 300,
+        ease: 'Power2'
+      });
+      this.tweens.add({
+        targets: shadow,
+        y: char.targetY + 10,
+        duration: 300,
+        ease: 'Power2'
+      });
     }
   }
   
@@ -428,6 +493,7 @@ export default class StartScene extends Phaser.Scene {
     // Dừng rotation event cũ nếu có
     if (this.rotationEvent) {
       this.rotationEvent.destroy();
+      this.rotationEvent = null;
     }
     
     if (window.GameSettings.effects.characterRotation) {
@@ -436,7 +502,21 @@ export default class StartScene extends Phaser.Scene {
         repeat: -1,
         callback: () => {
           this.characterSprites.forEach(({ sprite, char }) => {
-            sprite.rotation += char.rotateSpeed;
+            if (sprite && sprite.active) {
+              sprite.rotation += char.rotateSpeed;
+            }
+          });
+        }
+      });
+    } else {
+      // Reset rotation về 0
+      this.characterSprites.forEach(({ sprite }) => {
+        if (sprite && sprite.active) {
+          this.tweens.add({
+            targets: sprite,
+            rotation: 0,
+            duration: 500,
+            ease: 'Power2'
           });
         }
       });
@@ -445,7 +525,11 @@ export default class StartScene extends Phaser.Scene {
   
   createBackgroundParticles() {
     // Xóa particles cũ
-    this.backgroundParticles.forEach(particle => particle.destroy());
+    this.backgroundParticles.forEach(particle => {
+      if (particle && particle.active) {
+        particle.destroy();
+      }
+    });
     this.backgroundParticles = [];
     
     const { width, height } = this.sys.game.canvas;
@@ -505,7 +589,11 @@ export default class StartScene extends Phaser.Scene {
         scale: { from: 1, to: 0 },
         duration: 800,
         ease: 'Power2',
-        onComplete: () => particle.destroy()
+        onComplete: () => {
+          if (particle && particle.active) {
+            particle.destroy();
+          }
+        }
       });
     }
   }
@@ -514,23 +602,7 @@ export default class StartScene extends Phaser.Scene {
     const { width, height } = this.sys.game.canvas;
     
     // Conditional button glow
-    this.buttonGlow = null;
-    if (window.GameSettings.effects.glowEffects) {
-      this.buttonGlow = this.add.graphics();
-      this.buttonGlow.fillStyle(0xffd700, 0.3);
-      this.buttonGlow.fillCircle(width / 2, height - 100, 80);
-      this.buttonGlow.setDepth(5);
-      
-      this.tweens.add({
-        targets: this.buttonGlow,
-        alpha: { from: 0.3, to: 0.1 },
-        scale: { from: 1, to: 1.5 },
-        duration: 1500,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-    }
+    this.updateButtonGlow();
     
     this.playBtn = this.add.image(width / 2, height + 100, "playnow")
       .setInteractive({ useHandCursor: true })
@@ -584,7 +656,7 @@ export default class StartScene extends Phaser.Scene {
   }
   
   updatePlayButtonEffects() {
-    if (!this.playBtn) return;
+    if (!this.playBtn || !this.playBtn.active) return;
     
     // Dừng tween cũ
     this.tweens.killTweensOf(this.playBtn);
@@ -600,8 +672,14 @@ export default class StartScene extends Phaser.Scene {
         ease: 'Sine.easeInOut',
       });
     } else {
-      this.playBtn.setPosition(this.sys.game.canvas.width / 2, this.sys.game.canvas.height - 100);
-      this.playBtn.setScale(1);
+      // Reset về vị trí và scale cố định
+      this.tweens.add({
+        targets: this.playBtn,
+        y: this.sys.game.canvas.height - 100,
+        scale: 1,
+        duration: 300,
+        ease: 'Power2'
+      });
     }
   }
   
@@ -637,7 +715,11 @@ export default class StartScene extends Phaser.Scene {
         alpha: 0,
         duration: 300,
         ease: 'Power2',
-        onComplete: () => flash.destroy()
+        onComplete: () => {
+          if (flash && flash.active) {
+            flash.destroy();
+          }
+        }
       });
     }
     
@@ -711,12 +793,18 @@ export default class StartScene extends Phaser.Scene {
   onWakeFromSettings() {
     // Cập nhật tất cả hiệu ứng dựa theo settings mới
     this.updateAllEffects();
+    this.lastSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
   }
   
   updateAllEffects() {
     // Cập nhật music volume
-    if (this.musicInstance) {
-      this.musicInstance.setVolume(window.GameSettings.effects.audioVolume);
+    if (this.musicInstance && this.musicInstance.isPlaying) {
+      this.tweens.add({
+        targets: this.musicInstance,
+        volume: window.GameSettings.effects.audioVolume,
+        duration: 500,
+        ease: 'Power2'
+      });
     }
     
     // Cập nhật background parallax
@@ -744,7 +832,8 @@ export default class StartScene extends Phaser.Scene {
   }
   
   updateButtonGlow() {
-    if (this.buttonGlow) {
+    // Xóa glow cũ nếu có
+    if (this.buttonGlow && this.buttonGlow.active) {
       this.buttonGlow.destroy();
       this.buttonGlow = null;
     }

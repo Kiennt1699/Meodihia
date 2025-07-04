@@ -4,49 +4,37 @@ export default class SettingsScene extends Phaser.Scene {
   constructor() {
     super({ key: "SettingsScene" });
     this.settingsData = null;
+    this.originalSettings = null; // Backup để reset
     this.settingsElements = [];
     this.currentCategory = 'visual';
     this.categories = ['visual', 'audio', 'performance'];
+    this.controls = []; // Lưu trữ controls để cập nhật
   }
 
   preload() {
-    // Create any needed graphics or load assets for the settings UI
     this.createSettingsAssets();
   }
 
   create() {
     const { width, height } = this.sys.game.canvas;
     
-    // Store reference to game settings
-    this.settingsData = window.GameSettings.effects;
+    // Tạo backup của settings hiện tại
+    this.settingsData = JSON.parse(JSON.stringify(window.GameSettings.effects));
+    this.originalSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
     
-    // Create background overlay
     this.createBackground();
-    
-    // Create main settings panel
     this.createSettingsPanel();
-    
-    // Create category tabs
     this.createCategoryTabs();
-    
-    // Create settings content
     this.createSettingsContent();
-    
-    // Create control buttons
     this.createControlButtons();
-    
-    // Add keyboard controls
     this.addKeyboardControls();
-    
-    // Entrance animation
     this.playEntranceAnimation();
   }
 
   createSettingsAssets() {
-    // Create dynamic graphics for UI elements
     const graphics = this.add.graphics();
     
-    // Create toggle switch texture
+    // Toggle switch textures
     graphics.fillStyle(0x00ff00, 1);
     graphics.fillRoundedRect(0, 0, 60, 30, 15);
     graphics.generateTexture('toggle-on', 60, 30);
@@ -57,7 +45,7 @@ export default class SettingsScene extends Phaser.Scene {
     graphics.generateTexture('toggle-off', 60, 30);
     graphics.clear();
     
-    // Create button textures
+    // Button textures
     graphics.fillStyle(0x1a1a2e, 1);
     graphics.lineStyle(2, 0xffd700, 1);
     graphics.fillRoundedRect(0, 0, 120, 40, 10);
@@ -77,17 +65,14 @@ export default class SettingsScene extends Phaser.Scene {
   createBackground() {
     const { width, height } = this.sys.game.canvas;
     
-    // Animated background overlay
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.85);
     overlay.fillRect(0, 0, width, height);
     overlay.setInteractive();
     overlay.setDepth(0);
     
-    // Add subtle animated background pattern
     this.createBackgroundPattern();
     
-    // Close on background click
     overlay.on('pointerdown', (pointer, currentlyOver) => {
       if (currentlyOver.length === 0) {
         this.closeSettings();
@@ -98,7 +83,6 @@ export default class SettingsScene extends Phaser.Scene {
   createBackgroundPattern() {
     const { width, height } = this.sys.game.canvas;
     
-    // Create subtle moving particles
     for (let i = 0; i < 20; i++) {
       const particle = this.add.graphics();
       particle.fillStyle(0xffd700, 0.1);
@@ -123,7 +107,6 @@ export default class SettingsScene extends Phaser.Scene {
   createSettingsPanel() {
     const { width, height } = this.sys.game.canvas;
     
-    // Main panel background
     const panel = this.add.graphics();
     panel.fillStyle(0x1a1a2e, 0.95);
     panel.fillRoundedRect(width / 2 - 300, height / 2 - 250, 600, 500, 20);
@@ -131,7 +114,6 @@ export default class SettingsScene extends Phaser.Scene {
     panel.strokeRoundedRect(width / 2 - 300, height / 2 - 250, 600, 500, 20);
     panel.setDepth(10);
     
-    // Panel glow effect
     if (this.settingsData.glowEffects) {
       const glow = this.add.graphics();
       glow.fillStyle(0xffd700, 0.2);
@@ -148,7 +130,6 @@ export default class SettingsScene extends Phaser.Scene {
       });
     }
     
-    // Title
     const title = this.add.text(width / 2, height / 2 - 210, 'GAME SETTINGS', {
       font: '32px Arial',
       fill: '#ffd700',
@@ -157,7 +138,6 @@ export default class SettingsScene extends Phaser.Scene {
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(20);
     
-    // Add title glow effect
     if (this.settingsData.glowEffects) {
       this.tweens.add({
         targets: title,
@@ -185,7 +165,6 @@ export default class SettingsScene extends Phaser.Scene {
       const tabX = startX + index * tabWidth;
       const isActive = category === this.currentCategory;
       
-      // Tab background
       const tabBg = this.add.graphics();
       tabBg.fillStyle(isActive ? 0x2a2a3e : 0x1a1a2e, 1);
       tabBg.lineStyle(2, isActive ? 0xffd700 : 0x666666, 1);
@@ -194,32 +173,45 @@ export default class SettingsScene extends Phaser.Scene {
       tabBg.setDepth(15);
       tabBg.setInteractive(new Phaser.Geom.Rectangle(tabX, tabY, tabWidth, tabHeight), Phaser.Geom.Rectangle.Contains);
       
-      // Tab text
       const tabText = this.add.text(tabX + tabWidth / 2, tabY + tabHeight / 2, category.toUpperCase(), {
         font: '14px Arial',
         fill: isActive ? '#ffd700' : '#cccccc',
         fontWeight: 'bold'
       }).setOrigin(0.5).setDepth(20);
       
-      // Tab interaction
+      // Improved tab interactions
       tabBg.on('pointerover', () => {
         if (category !== this.currentCategory) {
-          tabBg.clear();
-          tabBg.fillStyle(0x2a2a3e, 0.8);
-          tabBg.lineStyle(2, 0xffd700, 0.8);
-          tabBg.fillRoundedRect(tabX, tabY, tabWidth, tabHeight, 10);
-          tabBg.strokeRoundedRect(tabX, tabY, tabWidth, tabHeight, 10);
+          this.tweens.add({
+            targets: tabBg,
+            alpha: 0.8,
+            duration: 150,
+            ease: 'Power2'
+          });
+          this.tweens.add({
+            targets: tabText,
+            scale: 1.05,
+            duration: 150,
+            ease: 'Power2'
+          });
           tabText.setFill('#ffffff');
         }
       });
       
       tabBg.on('pointerout', () => {
         if (category !== this.currentCategory) {
-          tabBg.clear();
-          tabBg.fillStyle(0x1a1a2e, 1);
-          tabBg.lineStyle(2, 0x666666, 1);
-          tabBg.fillRoundedRect(tabX, tabY, tabWidth, tabHeight, 10);
-          tabBg.strokeRoundedRect(tabX, tabY, tabWidth, tabHeight, 10);
+          this.tweens.add({
+            targets: tabBg,
+            alpha: 1,
+            duration: 150,
+            ease: 'Power2'
+          });
+          this.tweens.add({
+            targets: tabText,
+            scale: 1,
+            duration: 150,
+            ease: 'Power2'
+          });
           tabText.setFill('#cccccc');
         }
       });
@@ -230,7 +222,7 @@ export default class SettingsScene extends Phaser.Scene {
         }
       });
       
-      this.categoryTabs.push({ bg: tabBg, text: tabText, category });
+      this.categoryTabs.push({ bg: tabBg, text: tabText, category, x: tabX, y: tabY, width: tabWidth, height: tabHeight });
       this.settingsElements.push(tabBg, tabText);
     });
   }
@@ -238,11 +230,6 @@ export default class SettingsScene extends Phaser.Scene {
   createSettingsContent() {
     const { width, height } = this.sys.game.canvas;
     
-    // Content area
-    const contentY = height / 2 - 100;
-    const contentHeight = 200;
-    
-    // Settings definitions organized by category
     this.settingsConfig = {
       visual: [
         { key: 'characterRotation', label: 'Character Rotation', type: 'boolean', description: 'Rotate characters continuously' },
@@ -272,28 +259,26 @@ export default class SettingsScene extends Phaser.Scene {
     
     // Clear existing content
     this.contentContainer.removeAll(true);
+    this.controls = []; // Reset controls array
     
     const settings = this.settingsConfig[this.currentCategory];
     const startY = height / 2 - 80;
-    const spacing = 45;
+    const spacing = 55;
     
     settings.forEach((setting, index) => {
       const y = startY + index * spacing;
       
-      // Setting label
       const label = this.add.text(width / 2 - 220, y, setting.label, {
         font: '18px Arial',
         fill: '#ffffff',
         fontWeight: 'bold'
       }).setDepth(25);
       
-      // Setting description
-      const description = this.add.text(width / 2 - 220, y + 18, setting.description, {
+      const description = this.add.text(width / 2 - 220, y + 20, setting.description, {
         font: '12px Arial',
         fill: '#aaaaaa'
       }).setDepth(25);
       
-      // Setting control
       let control;
       switch (setting.type) {
         case 'boolean':
@@ -307,54 +292,54 @@ export default class SettingsScene extends Phaser.Scene {
           break;
       }
       
-      this.contentContainer.add([label, description, ...control]);
+      this.contentContainer.add([label, description, ...control.elements]);
+      this.controls.push({ setting, control });
     });
   }
 
   createToggleControl(x, y, key) {
     const isOn = this.settingsData[key];
     
-    // Toggle background
     const toggleBg = this.add.graphics();
     toggleBg.fillStyle(isOn ? 0x00ff00 : 0x666666, 1);
     toggleBg.fillRoundedRect(x, y - 12, 60, 24, 12);
     toggleBg.setInteractive(new Phaser.Geom.Rectangle(x, y - 12, 60, 24), Phaser.Geom.Rectangle.Contains);
     
-    // Toggle knob
     const toggleKnob = this.add.graphics();
     toggleKnob.fillStyle(0xffffff, 1);
     toggleKnob.fillCircle(isOn ? x + 45 : x + 15, y, 10);
     
-    // Toggle interaction
+    const control = {
+      elements: [toggleBg, toggleKnob],
+      update: (newValue) => {
+        const newIsOn = newValue;
+        this.tweens.add({
+          targets: toggleKnob,
+          x: newIsOn ? x + 45 : x + 15,
+          duration: 200,
+          ease: 'Back.easeOut'
+        });
+        
+        toggleBg.clear();
+        toggleBg.fillStyle(newIsOn ? 0x00ff00 : 0x666666, 1);
+        toggleBg.fillRoundedRect(x, y - 12, 60, 24, 12);
+      }
+    };
+    
     toggleBg.on('pointerdown', () => {
       this.settingsData[key] = !this.settingsData[key];
-      const newIsOn = this.settingsData[key];
-      
-      // Animate toggle
-      this.tweens.add({
-        targets: toggleKnob,
-        x: newIsOn ? x + 45 : x + 15,
-        duration: 200,
-        ease: 'Back.easeOut'
-      });
-      
-      // Update colors
-      toggleBg.clear();
-      toggleBg.fillStyle(newIsOn ? 0x00ff00 : 0x666666, 1);
-      toggleBg.fillRoundedRect(x, y - 12, 60, 24, 12);
-      
-      // Play sound feedback
+      control.update(this.settingsData[key]);
       this.playUISound();
+      this.applySettingsRealtime(); // Apply changes immediately
     });
     
-    return [toggleBg, toggleKnob];
+    return control;
   }
 
   createSelectControl(x, y, key, options) {
     const currentValue = this.settingsData[key];
     const currentIndex = options.indexOf(currentValue);
     
-    // Select background
     const selectBg = this.add.graphics();
     selectBg.fillStyle(0x333333, 1);
     selectBg.lineStyle(2, 0x666666, 1);
@@ -362,14 +347,12 @@ export default class SettingsScene extends Phaser.Scene {
     selectBg.strokeRoundedRect(x, y - 15, 140, 30, 8);
     selectBg.setInteractive(new Phaser.Geom.Rectangle(x, y - 15, 140, 30), Phaser.Geom.Rectangle.Contains);
     
-    // Select text
     const selectText = this.add.text(x + 70, y, currentValue.toUpperCase(), {
       font: '16px Arial',
       fill: '#ffffff',
       fontWeight: 'bold'
     }).setOrigin(0.5);
     
-    // Arrow indicators
     const leftArrow = this.add.text(x + 10, y, '<', {
       font: '16px Arial',
       fill: '#ffd700',
@@ -382,103 +365,129 @@ export default class SettingsScene extends Phaser.Scene {
       fontWeight: 'bold'
     }).setOrigin(0.5);
     
-    // Interaction
+    const control = {
+      elements: [selectBg, selectText, leftArrow, rightArrow],
+      update: (newValue) => {
+        selectText.setText(newValue.toUpperCase());
+        this.tweens.add({
+          targets: selectText,
+          scale: 1.1,
+          duration: 100,
+          yoyo: true,
+          ease: 'Power2'
+        });
+      }
+    };
+    
     selectBg.on('pointerdown', () => {
-      const nextIndex = (currentIndex + 1) % options.length;
+      const currentIdx = options.indexOf(this.settingsData[key]);
+      const nextIndex = (currentIdx + 1) % options.length;
       const nextValue = options[nextIndex];
       this.settingsData[key] = nextValue;
-      selectText.setText(nextValue.toUpperCase());
-      
-      // Flash effect
-      this.tweens.add({
-        targets: selectBg,
-        alpha: 0.5,
-        duration: 100,
-        yoyo: true,
-        ease: 'Power2'
-      });
-      
+      control.update(nextValue);
       this.playUISound();
+      this.applySettingsRealtime();
     });
     
-    return [selectBg, selectText, leftArrow, rightArrow];
+    return control;
   }
 
   createSliderControl(x, y, key, min, max, step) {
     const currentValue = this.settingsData[key];
     const percentage = (currentValue - min) / (max - min);
     
-    // Slider track
     const track = this.add.graphics();
     track.fillStyle(0x666666, 1);
     track.fillRoundedRect(x, y - 3, 120, 6, 3);
     
-    // Slider fill
     const fill = this.add.graphics();
     fill.fillStyle(0x00ff00, 1);
     fill.fillRoundedRect(x, y - 3, 120 * percentage, 6, 3);
     
-    // Slider handle
     const handle = this.add.graphics();
     handle.fillStyle(0xffffff, 1);
     handle.fillCircle(x + 120 * percentage, y, 12);
     handle.setInteractive(new Phaser.Geom.Circle(x + 120 * percentage, y, 12), Phaser.Geom.Circle.Contains);
     
-    // Value display
     const valueText = this.add.text(x + 140, y, `${Math.round(currentValue * 100)}%`, {
       font: '14px Arial',
       fill: '#ffffff'
     }).setOrigin(0, 0.5);
     
-    // Drag functionality
+    const control = {
+      elements: [track, fill, handle, valueText],
+      update: (newValue) => {
+        const newPercentage = (newValue - min) / (max - min);
+        fill.clear();
+        fill.fillStyle(0x00ff00, 1);
+        fill.fillRoundedRect(x, y - 3, 120 * newPercentage, 6, 3);
+        
+        this.tweens.add({
+          targets: handle,
+          x: x + 120 * newPercentage,
+          duration: 200,
+          ease: 'Power2'
+        });
+        
+        valueText.setText(`${Math.round(newValue * 100)}%`);
+      }
+    };
+    
+    let isDragging = false;
+    
     handle.on('pointerdown', () => {
+      isDragging = true;
       handle.setTint(0xffd700);
     });
     
     this.input.on('pointermove', (pointer) => {
-      if (handle.input.enabled && pointer.isDown) {
+      if (isDragging && pointer.isDown) {
         const newX = Phaser.Math.Clamp(pointer.x, x, x + 120);
         const newPercentage = (newX - x) / 120;
         const newValue = min + (max - min) * newPercentage;
         const steppedValue = Math.round(newValue / step) * step;
         
         this.settingsData[key] = steppedValue;
-        
-        // Update visuals
-        fill.clear();
-        fill.fillStyle(0x00ff00, 1);
-        fill.fillRoundedRect(x, y - 3, 120 * newPercentage, 6, 3);
-        
-        handle.x = newX;
-        valueText.setText(`${Math.round(steppedValue * 100)}%`);
+        control.update(steppedValue);
+        this.applySettingsRealtime();
       }
     });
     
     this.input.on('pointerup', () => {
-      handle.clearTint();
+      if (isDragging) {
+        isDragging = false;
+        handle.clearTint();
+        this.playUISound();
+      }
     });
     
-    return [track, fill, handle, valueText];
+    return control;
   }
 
   switchCategory(newCategory) {
     this.currentCategory = newCategory;
     
-    // Update tab appearances
+    // Update tab appearances with smooth transition
     this.categoryTabs.forEach(tab => {
       const isActive = tab.category === newCategory;
-      const tabBounds = tab.bg.getBounds();
       
+      // Clear and redraw tab
       tab.bg.clear();
       tab.bg.fillStyle(isActive ? 0x2a2a3e : 0x1a1a2e, 1);
       tab.bg.lineStyle(2, isActive ? 0xffd700 : 0x666666, 1);
-      tab.bg.fillRoundedRect(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, 10);
-      tab.bg.strokeRoundedRect(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, 10);
+      tab.bg.fillRoundedRect(tab.x, tab.y, tab.width, tab.height, 10);
+      tab.bg.strokeRoundedRect(tab.x, tab.y, tab.width, tab.height, 10);
       
-      tab.text.setFill(isActive ? '#ffd700' : '#cccccc');
+      // Animate text color change
+      this.tweens.add({
+        targets: tab.text,
+        tint: isActive ? 0xffd700 : 0xcccccc,
+        duration: 200,
+        ease: 'Power2'
+      });
     });
     
-    // Update content with slide animation
+    // Content transition with fade
     this.tweens.add({
       targets: this.contentContainer,
       alpha: 0,
@@ -498,31 +507,39 @@ export default class SettingsScene extends Phaser.Scene {
     this.playUISound();
   }
 
+  // Apply settings in real-time
+  applySettingsRealtime() {
+    // Update global settings
+    Object.assign(window.GameSettings.effects, this.settingsData);
+    
+    // Trigger update in StartScene if it exists
+    const startScene = this.scene.get('StartScene');
+    if (startScene && startScene.scene.isActive()) {
+      startScene.updateAllEffects();
+    }
+  }
+
   createControlButtons() {
     const { width, height } = this.sys.game.canvas;
     
-    // Reset to defaults button
     const resetBtn = this.add.text(width / 2 - 100, height / 2 + 180, 'RESET', {
       font: '20px Arial',
       fill: '#ff6666',
       fontWeight: 'bold'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(20);
     
-    // Apply button
     const applyBtn = this.add.text(width / 2, height / 2 + 180, 'APPLY', {
       font: '20px Arial',
       fill: '#66ff66',
       fontWeight: 'bold'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(20);
     
-    // Close button
     const closeBtn = this.add.text(width / 2 + 100, height / 2 + 180, 'CLOSE', {
       font: '20px Arial',
       fill: '#ffd700',
       fontWeight: 'bold'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(20);
     
-    // Button interactions
     this.setupButtonInteractions(resetBtn, () => this.resetSettings());
     this.setupButtonInteractions(applyBtn, () => this.applySettings());
     this.setupButtonInteractions(closeBtn, () => this.closeSettings());
@@ -532,39 +549,47 @@ export default class SettingsScene extends Phaser.Scene {
 
   setupButtonInteractions(button, callback) {
     button.on('pointerover', () => {
-      button.setScale(1.1);
       this.tweens.add({
         targets: button,
-        alpha: 0.8,
-        duration: 100
+        scale: 1.1,
+        duration: 150,
+        ease: 'Back.easeOut'
       });
     });
     
     button.on('pointerout', () => {
-      button.setScale(1);
       this.tweens.add({
         targets: button,
-        alpha: 1,
-        duration: 100
+        scale: 1,
+        duration: 150,
+        ease: 'Back.easeOut'
       });
     });
     
     button.on('pointerdown', () => {
-      button.setScale(0.95);
-      this.time.delayedCall(100, () => {
-        button.setScale(1.1);
-        callback();
+      this.tweens.add({
+        targets: button,
+        scale: 0.95,
+        duration: 50,
+        ease: 'Power2',
+        onComplete: () => {
+          this.tweens.add({
+            targets: button,
+            scale: 1.1,
+            duration: 100,
+            ease: 'Back.easeOut'
+          });
+          callback();
+        }
       });
     });
   }
 
   addKeyboardControls() {
-    // ESC to close
     this.input.keyboard.on('keydown-ESC', () => {
       this.closeSettings();
     });
     
-    // Tab to switch categories
     this.input.keyboard.on('keydown-TAB', () => {
       const currentIndex = this.categories.indexOf(this.currentCategory);
       const nextIndex = (currentIndex + 1) % this.categories.length;
@@ -573,13 +598,11 @@ export default class SettingsScene extends Phaser.Scene {
   }
 
   playEntranceAnimation() {
-    // Set initial states
     this.settingsElements.forEach(element => {
       element.setAlpha(0);
       element.setScale(0.8);
     });
     
-    // Animate entrance
     this.tweens.add({
       targets: this.settingsElements,
       alpha: 1,
@@ -591,14 +614,12 @@ export default class SettingsScene extends Phaser.Scene {
   }
 
   playUISound() {
-    // Play a subtle UI sound if available
     if (this.sound.get('ui-click')) {
-      this.sound.play('ui-click', { volume: 0.2 });
+      this.sound.play('ui-click', { volume: 0.3 });
     }
   }
 
   resetSettings() {
-    // Reset to default values
     const defaults = {
       characterRotation: false,
       particleIntensity: 'medium',
@@ -610,19 +631,55 @@ export default class SettingsScene extends Phaser.Scene {
       audioVolume: 0.4
     };
     
-    Object.assign(this.settingsData, defaults);
+    // Update both local and global settings
+    this.settingsData = JSON.parse(JSON.stringify(defaults));
+    Object.assign(window.GameSettings.effects, defaults);
+    
+    // Refresh UI
     this.updateSettingsContent();
+    
+    // Apply to StartScene immediately
+    this.applySettingsRealtime();
+    
     this.playUISound();
+    
+    // Visual feedback
+    this.tweens.add({
+      targets: this.contentContainer,
+      scale: 1.05,
+      duration: 100,
+      yoyo: true,
+      ease: 'Power2'
+    });
   }
 
   applySettings() {
-    // Settings are already applied in real-time
-    // This could save to localStorage if needed
-    this.closeSettings();
+    // Settings are already applied in real-time, just provide feedback
+    this.playUISound();
+    
+    // Visual feedback
+    const { width, height } = this.sys.game.canvas;
+    const feedback = this.add.text(width / 2, height / 2 + 220, 'SETTINGS APPLIED!', {
+      font: '16px Arial',
+      fill: '#66ff66',
+      fontWeight: 'bold'
+    }).setOrigin(0.5).setDepth(30);
+    
+    this.tweens.add({
+      targets: feedback,
+      alpha: 0,
+      y: height / 2 + 200,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => feedback.destroy()
+    });
+    
+    this.time.delayedCall(500, () => {
+      this.closeSettings();
+    });
   }
 
   closeSettings() {
-    // Exit animation
     this.tweens.add({
       targets: this.settingsElements,
       alpha: 0,
