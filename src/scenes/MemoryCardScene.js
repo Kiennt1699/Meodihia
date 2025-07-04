@@ -597,7 +597,7 @@ export default class MemoryCardScene extends Phaser.Scene {
     this.createVictoryEffects();
     
     this.time.delayedCall(1500, () => {
-      this.scene.start("EndScene");
+      this.scene.start("EndScene", { isWin: true });
     });
   }
 
@@ -689,7 +689,7 @@ export default class MemoryCardScene extends Phaser.Scene {
     
     this.timerText.setVisible(false);
     this.time.delayedCall(2000, () => {
-      this.scene.start("EndScene");
+      this.scene.start("EndScene", { isWin: false });
     });
   }
 }

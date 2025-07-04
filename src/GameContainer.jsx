@@ -21,6 +21,9 @@ const PhaserGame = ({ sceneKey }) => {
       transparent: true,
       scene: [StartScene, QuizScene,  SettingsScene, MemoryCardScene, EndScene ], // Add other scenes here
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      dom: {
+        createContainer: true
+      }
     });
 
     return () => {
