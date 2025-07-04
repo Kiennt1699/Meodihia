@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-// Global settings object
+// Global settings object - đồng bộ với SettingsScene
 window.GameSettings = {
   effects: {
     characterRotation: false,
@@ -19,6 +19,8 @@ export default class StartScene extends Phaser.Scene {
     super({ key: "StartScene" });
     this.characterSprites = [];
     this.backgroundParticles = [];
+    this.dynamicElements = []; // Để theo dõi các elements cần cập nhật
+    this.musicInstance = null;
   }
 
   preload() {
@@ -29,17 +31,45 @@ export default class StartScene extends Phaser.Scene {
     gradientBg.fillGradientStyle(0x1a1a2e, 0x16213e, 0x0f3460, 0x533483, 1);
     gradientBg.fillRect(0, 0, width, height);
     
-    // Advanced loading bar with conditional glow effect
+    // Advanced loading bar với hiệu ứng phụ thuộc settings
+    this.createLoadingBar();
+    
+    // Load assets
+    this.load.image("bg", "assets/bg_1.jpg");
+    this.load.image("logo", "assets/logo.png");
+    this.load.image("puss", "assets/s1_puss.png");
+    this.load.image("kitty", "assets/s1_kitty.png");
+    this.load.image("perro", "assets/s1_perro.png");
+    this.load.image("playnow", "assets/btn_playnow.png");
+    this.load.image("settings", "assets/arrow_right.png");
+    this.load.audio('bgm', 'assets/bgm.mp3');
+    this.load.audio('ui-click', 'assets/ui-click.mp3'); // Để phối hợp với SettingsScene
+  }
+
+  createLoadingBar() {
+    const { width, height } = this.sys.game.canvas;
+    
+    // Loading bar background
     const loadingBarBg = this.add.graphics();
     loadingBarBg.fillStyle(0x000000, 0.4);
     loadingBarBg.fillRoundedRect(width / 4 - 10, height / 2 - 10, width / 2 + 20, 50, 25);
     
-    // Conditional outer glow
+    // Conditional outer glow dựa theo settings
     let outerGlow = null;
     if (window.GameSettings.effects.glowEffects) {
       outerGlow = this.add.graphics();
       outerGlow.fillStyle(0xffd700, 0.3);
       outerGlow.fillRoundedRect(width / 4 - 15, height / 2 - 15, width / 2 + 30, 60, 30);
+      
+      // Thêm hiệu ứng nhấp nháy cho glow
+      this.tweens.add({
+        targets: outerGlow,
+        alpha: { from: 0.3, to: 0.1 },
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
     }
     
     const loadingBar = this.add.graphics();
@@ -61,7 +91,7 @@ export default class StartScene extends Phaser.Scene {
       }
     }).setOrigin(0.5, 0);
     
-    // Conditional floating particles
+    // Conditional loading particles dựa theo particle intensity
     const particles = [];
     const particleCount = this.getParticleCount();
     
@@ -126,67 +156,146 @@ export default class StartScene extends Phaser.Scene {
         }
       });
     });
-    
-    // Load assets
-    this.load.image("bg", "assets/bg_1.jpg");
-    this.load.image("logo", "assets/logo.png");
-    this.load.image("puss", "assets/s1_puss.png");
-    this.load.image("kitty", "assets/s1_kitty.png");
-    this.load.image("perro", "assets/s1_perro.png");
-    this.load.image("playnow", "assets/btn_playnow.png");
-    this.load.image("settings", "assets/arrow_right.png"); // New settings button
-    this.load.audio('bgm', 'assets/bgm.mp3');
   }
 
   create() {
-    // Background music with fade in
-    if (!this.sound.get('bgm')) {
-      const music = this.sound.add('bgm', {
-        loop: true,
-        volume: 0
-      });
-      music.play();
-      this.tweens.add({
-        targets: music,
-        volume: window.GameSettings.effects.audioVolume,
-        duration: 2000,
-        ease: 'Power2'
-      });
-    }
+    // Khởi tạo background music với volume từ settings
+    this.initializeMusic();
     
     const { width, height } = this.sys.game.canvas;
     
-    // Background with conditional parallax
-    const bg = this.add.image(width / 2, height / 2, "bg").setDisplaySize(width * 1.1, height * 1.1);
-    if (window.GameSettings.effects.backgroundParallax) {
-      this.tweens.add({
-        targets: bg,
-        x: width / 2 + 20,
-        y: height / 2 - 10,
-        duration: 8000,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-    }
+    // Background với conditional parallax
+    this.createBackground();
     
     // Conditional background particles
     this.createBackgroundParticles();
     
-    // Logo with enhanced entrance
-    const logo = this.add.image(width / 2, -100, "logo")
-      .setOrigin(0.5, 0.5)
-      .setScale(0.5)
-      .setDepth(100)
-      .setAlpha(0);
-    
-    this.createLogoAnimation(logo);
+    // Logo với enhanced entrance
+    this.createLogo();
     
     // Enhanced characters
     this.createCharacters();
     
     // Settings button
     this.createSettingsButton();
+    
+    // Lắng nghe sự kiện khi quay lại từ SettingsScene
+    this.events.on('wake', this.onWakeFromSettings, this);
+  }
+  
+  initializeMusic() {
+    if (!this.sound.get('bgm')) {
+      this.musicInstance = this.sound.add('bgm', {
+        loop: true,
+        volume: 0
+      });
+      this.musicInstance.play();
+      this.tweens.add({
+        targets: this.musicInstance,
+        volume: window.GameSettings.effects.audioVolume,
+        duration: 2000,
+        ease: 'Power2'
+      });
+    } else {
+      this.musicInstance = this.sound.get('bgm');
+      // Cập nhật volume theo settings
+      this.musicInstance.setVolume(window.GameSettings.effects.audioVolume);
+    }
+  }
+  
+  createBackground() {
+    const { width, height } = this.sys.game.canvas;
+    
+    this.background = this.add.image(width / 2, height / 2, "bg").setDisplaySize(width * 1.1, height * 1.1);
+    this.dynamicElements.push(this.background);
+    
+    this.updateBackgroundParallax();
+  }
+  
+  updateBackgroundParallax() {
+    // Dừng tween cũ nếu có
+    this.tweens.killTweensOf(this.background);
+    
+    if (window.GameSettings.effects.backgroundParallax) {
+      this.tweens.add({
+        targets: this.background,
+        x: this.sys.game.canvas.width / 2 + 20,
+        y: this.sys.game.canvas.height / 2 - 10,
+        duration: 8000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    } else {
+      // Reset position nếu parallax bị tắt
+      this.background.setPosition(this.sys.game.canvas.width / 2, this.sys.game.canvas.height / 2);
+    }
+  }
+  
+  createLogo() {
+    const { width } = this.sys.game.canvas;
+    
+    this.logo = this.add.image(width / 2, -100, "logo")
+      .setOrigin(0.5, 0.5)
+      .setScale(0.5)
+      .setDepth(100)
+      .setAlpha(0);
+    
+    this.dynamicElements.push(this.logo);
+    this.createLogoAnimation();
+  }
+  
+  createLogoAnimation() {
+    const { width } = this.sys.game.canvas;
+    
+    // Logo entrance với conditional effects
+    this.tweens.add({
+      targets: this.logo,
+      y: 120,
+      scale: 1.2,
+      alpha: 1,
+      duration: 1200,
+      ease: 'Back.easeOut',
+      delay: 2000,
+      onComplete: () => {
+        this.updateLogoEffects();
+      }
+    });
+  }
+  
+  updateLogoEffects() {
+    // Dừng tất cả tween cũ của logo
+    this.tweens.killTweensOf(this.logo);
+    
+    // Floating animation nếu được bật
+    if (window.GameSettings.effects.characterFloat) {
+      this.tweens.add({
+        targets: this.logo,
+        y: 110,
+        scale: 1.15,
+        duration: 3000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    } else {
+      this.logo.setPosition(this.sys.game.canvas.width / 2, 120);
+      this.logo.setScale(1.2);
+    }
+    
+    // Glow effect nếu được bật
+    if (window.GameSettings.effects.glowEffects) {
+      this.tweens.add({
+        targets: this.logo,
+        alpha: 0.8,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    } else {
+      this.logo.setAlpha(1);
+    }
   }
   
   getParticleCount() {
@@ -198,47 +307,6 @@ export default class StartScene extends Phaser.Scene {
       'extreme': 50
     };
     return counts[intensity] || 15;
-  }
-  
-  createLogoAnimation(logo) {
-    const { width } = this.sys.game.canvas;
-    
-    // Logo entrance with conditional effects
-    this.tweens.add({
-      targets: logo,
-      y: 120,
-      scale: 1.2,
-      alpha: 1,
-      duration: 1200,
-      ease: 'Back.easeOut',
-      delay: 2000,
-      onComplete: () => {
-        // Floating animation if enabled
-        if (window.GameSettings.effects.characterFloat) {
-          this.tweens.add({
-            targets: logo,
-            y: 110,
-            scale: 1.15,
-            duration: 3000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-          });
-        }
-        
-        // Glow effect if enabled
-        if (window.GameSettings.effects.glowEffects) {
-          this.tweens.add({
-            targets: logo,
-            alpha: 0.8,
-            duration: 1500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-          });
-        }
-      }
-    });
   }
   
   createCharacters() {
@@ -282,7 +350,7 @@ export default class StartScene extends Phaser.Scene {
         const char = chars[idx];
         const startX = width + 300;
         
-        // Create character with conditional shadow
+        // Create character với conditional shadow
         const shadow = this.add.image(startX + 10, char.targetY + 10, char.key)
           .setAlpha(0)
           .setScale(char.scale)
@@ -310,28 +378,7 @@ export default class StartScene extends Phaser.Scene {
             this.createParticleBurst(char.targetX, char.targetY, char.color);
           },
           onComplete: () => {
-            // Conditional floating animation
-            if (window.GameSettings.effects.characterFloat) {
-              this.tweens.add({
-                targets: sprite,
-                y: char.targetY - 15,
-                duration: 2000 + Math.random() * 1000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-              });
-              
-              this.tweens.add({
-                targets: shadow,
-                y: char.targetY + 5,
-                duration: 2000 + Math.random() * 1000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut',
-                delay: 200
-              });
-            }
-            
+            this.updateCharacterEffects(sprite, shadow, char);
             idx++;
             this.time.delayedCall(200, showNextChar);
           },
@@ -344,8 +391,47 @@ export default class StartScene extends Phaser.Scene {
     this.time.delayedCall(3500, showNextChar);
     
     // Conditional continuous rotation
+    this.setupCharacterRotation();
+  }
+  
+  updateCharacterEffects(sprite, shadow, char) {
+    // Dừng tween cũ
+    this.tweens.killTweensOf([sprite, shadow]);
+    
+    // Conditional floating animation
+    if (window.GameSettings.effects.characterFloat) {
+      this.tweens.add({
+        targets: sprite,
+        y: char.targetY - 15,
+        duration: 2000 + Math.random() * 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      this.tweens.add({
+        targets: shadow,
+        y: char.targetY + 5,
+        duration: 2000 + Math.random() * 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        delay: 200
+      });
+    } else {
+      sprite.setPosition(char.targetX, char.targetY);
+      shadow.setPosition(char.targetX + 10, char.targetY + 10);
+    }
+  }
+  
+  setupCharacterRotation() {
+    // Dừng rotation event cũ nếu có
+    if (this.rotationEvent) {
+      this.rotationEvent.destroy();
+    }
+    
     if (window.GameSettings.effects.characterRotation) {
-      this.time.addEvent({
+      this.rotationEvent = this.time.addEvent({
         delay: 16,
         repeat: -1,
         callback: () => {
@@ -358,6 +444,10 @@ export default class StartScene extends Phaser.Scene {
   }
   
   createBackgroundParticles() {
+    // Xóa particles cũ
+    this.backgroundParticles.forEach(particle => particle.destroy());
+    this.backgroundParticles = [];
+    
     const { width, height } = this.sys.game.canvas;
     const particleCount = Math.floor(this.getParticleCount() * 0.75);
     
@@ -424,15 +514,15 @@ export default class StartScene extends Phaser.Scene {
     const { width, height } = this.sys.game.canvas;
     
     // Conditional button glow
-    let buttonGlow = null;
+    this.buttonGlow = null;
     if (window.GameSettings.effects.glowEffects) {
-      buttonGlow = this.add.graphics();
-      buttonGlow.fillStyle(0xffd700, 0.3);
-      buttonGlow.fillCircle(width / 2, height - 100, 80);
-      buttonGlow.setDepth(5);
+      this.buttonGlow = this.add.graphics();
+      this.buttonGlow.fillStyle(0xffd700, 0.3);
+      this.buttonGlow.fillCircle(width / 2, height - 100, 80);
+      this.buttonGlow.setDepth(5);
       
       this.tweens.add({
-        targets: buttonGlow,
+        targets: this.buttonGlow,
         alpha: { from: 0.3, to: 0.1 },
         scale: { from: 1, to: 1.5 },
         duration: 1500,
@@ -442,66 +532,80 @@ export default class StartScene extends Phaser.Scene {
       });
     }
     
-    const playBtn = this.add.image(width / 2, height + 100, "playnow")
+    this.playBtn = this.add.image(width / 2, height + 100, "playnow")
       .setInteractive({ useHandCursor: true })
       .setScale(0.8)
       .setDepth(10)
       .setAlpha(0);
     
+    this.dynamicElements.push(this.playBtn);
+    
     // Button entrance
     this.tweens.add({
-      targets: playBtn,
+      targets: this.playBtn,
       y: height - 100,
       scale: 1,
       alpha: 1,
       duration: 1000,
       ease: 'Bounce.easeOut',
       onComplete: () => {
-        if (window.GameSettings.effects.characterFloat) {
-          this.tweens.add({
-            targets: playBtn,
-            y: height - 110,
-            scale: 1.05,
-            duration: 1500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-          });
-        }
+        this.updatePlayButtonEffects();
       }
     });
     
     // Enhanced hover effects
-    playBtn.on("pointerover", () => {
+    this.playBtn.on("pointerover", () => {
       this.tweens.add({
-        targets: playBtn,
+        targets: this.playBtn,
         scale: 1.2,
         duration: 200,
         ease: 'Back.easeOut',
       });
-      playBtn.setTint(0xffffaa);
+      this.playBtn.setTint(0xffffaa);
       
       if (window.GameSettings.effects.particleIntensity !== 'low') {
-        this.createParticleBurst(playBtn.x, playBtn.y, 0xffd700);
+        this.createParticleBurst(this.playBtn.x, this.playBtn.y, 0xffd700);
       }
     });
     
-    playBtn.on("pointerout", () => {
+    this.playBtn.on("pointerout", () => {
       this.tweens.add({
-        targets: playBtn,
+        targets: this.playBtn,
         scale: window.GameSettings.effects.characterFloat ? 1.05 : 1,
         duration: 200,
         ease: 'Back.easeOut',
       });
-      playBtn.clearTint();
+      this.playBtn.clearTint();
     });
     
-    playBtn.on("pointerdown", () => {
-      this.handlePlayButtonClick(playBtn);
+    this.playBtn.on("pointerdown", () => {
+      this.handlePlayButtonClick();
     });
   }
   
-  handlePlayButtonClick(playBtn) {
+  updatePlayButtonEffects() {
+    if (!this.playBtn) return;
+    
+    // Dừng tween cũ
+    this.tweens.killTweensOf(this.playBtn);
+    
+    if (window.GameSettings.effects.characterFloat) {
+      this.tweens.add({
+        targets: this.playBtn,
+        y: this.sys.game.canvas.height - 110,
+        scale: 1.05,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      this.playBtn.setPosition(this.sys.game.canvas.width / 2, this.sys.game.canvas.height - 100);
+      this.playBtn.setScale(1);
+    }
+  }
+  
+  handlePlayButtonClick() {
     const { width, height } = this.sys.game.canvas;
     
     // Screen shake effect
@@ -511,34 +615,15 @@ export default class StartScene extends Phaser.Scene {
     
     // Click effect
     this.tweens.add({
-      targets: playBtn,
+      targets: this.playBtn,
       scale: 0.95,
       duration: 100,
       yoyo: true,
       ease: 'Power2'
     });
     
-    // Transition effects based on settings
-    const transitionStyle = window.GameSettings.effects.transitionStyle;
-    
-    switch (transitionStyle) {
-      case 'zoom':
-        this.cameras.main.zoomTo(1.1, 500);
-        this.cameras.main.fadeOut(500, 0, 0, 0);
-        break;
-      case 'fade':
-        this.cameras.main.fadeOut(800, 0, 0, 0);
-        break;
-      case 'slide':
-        this.cameras.main.pan(width * 2, height / 2, 800, 'Power2');
-        this.cameras.main.fadeOut(800, 0, 0, 0);
-        break;
-      case 'spiral':
-        this.cameras.main.rotateTo(Math.PI * 2, true, 800);
-        this.cameras.main.zoomTo(0.1, 800);
-        this.cameras.main.fadeOut(800, 0, 0, 0);
-        break;
-    }
+    // Transition effects dựa theo settings
+    this.applyTransitionEffect();
     
     // Screen flash effect
     if (window.GameSettings.effects.glowEffects) {
@@ -561,20 +646,44 @@ export default class StartScene extends Phaser.Scene {
     });
   }
   
+  applyTransitionEffect() {
+    const { width, height } = this.sys.game.canvas;
+    const transitionStyle = window.GameSettings.effects.transitionStyle;
+    
+    switch (transitionStyle) {
+      case 'zoom':
+        this.cameras.main.zoomTo(1.1, 500);
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        break;
+      case 'fade':
+        this.cameras.main.fadeOut(800, 0, 0, 0);
+        break;
+      case 'slide':
+        this.cameras.main.pan(width * 2, height / 2, 800, 'Power2');
+        this.cameras.main.fadeOut(800, 0, 0, 0);
+        break;
+      case 'spiral':
+        this.cameras.main.rotateTo(Math.PI * 2, true, 800);
+        this.cameras.main.zoomTo(0.1, 800);
+        this.cameras.main.fadeOut(800, 0, 0, 0);
+        break;
+    }
+  }
+  
   createSettingsButton() {
     const { width, height } = this.sys.game.canvas;
     
-    // Settings button in top-right corner
-    const settingsBtn = this.add.image(width - 60, 60, "settings")
+    // Settings button ở góc trên-phải
+    this.settingsBtn = this.add.image(width - 60, 60, "settings")
       .setInteractive({ useHandCursor: true })
       .setScale(0.6)
       .setDepth(100)
       .setAlpha(0.8);
     
     // Hover effects
-    settingsBtn.on("pointerover", () => {
+    this.settingsBtn.on("pointerover", () => {
       this.tweens.add({
-        targets: settingsBtn,
+        targets: this.settingsBtn,
         scale: 0.7,
         alpha: 1,
         duration: 200,
@@ -582,9 +691,9 @@ export default class StartScene extends Phaser.Scene {
       });
     });
     
-    settingsBtn.on("pointerout", () => {
+    this.settingsBtn.on("pointerout", () => {
       this.tweens.add({
-        targets: settingsBtn,
+        targets: this.settingsBtn,
         scale: 0.6,
         alpha: 0.8,
         duration: 200,
@@ -592,142 +701,83 @@ export default class StartScene extends Phaser.Scene {
       });
     });
     
-    settingsBtn.on("pointerdown", () => {
+    this.settingsBtn.on("pointerdown", () => {
       this.scene.launch("SettingsScene");
       this.scene.pause();
     });
   }
-}
-
-// Settings Scene
-export class SettingsScene extends Phaser.Scene {
-  constructor() {
-    super({ key: "SettingsScene" });
+  
+  // Hàm được gọi khi quay lại từ SettingsScene
+  onWakeFromSettings() {
+    // Cập nhật tất cả hiệu ứng dựa theo settings mới
+    this.updateAllEffects();
   }
   
-  create() {
-    const { width, height } = this.sys.game.canvas;
+  updateAllEffects() {
+    // Cập nhật music volume
+    if (this.musicInstance) {
+      this.musicInstance.setVolume(window.GameSettings.effects.audioVolume);
+    }
     
-    // Semi-transparent background
-    const overlay = this.add.graphics();
-    overlay.fillStyle(0x000000, 0.8);
-    overlay.fillRect(0, 0, width, height);
-    overlay.setInteractive();
+    // Cập nhật background parallax
+    this.updateBackgroundParallax();
     
-    // Settings panel
-    const panel = this.add.graphics();
-    panel.fillStyle(0x1a1a2e, 0.95);
-    panel.fillRoundedRect(width / 2 - 250, height / 2 - 200, 500, 400, 20);
-    panel.lineStyle(3, 0xffd700, 1);
-    panel.strokeRoundedRect(width / 2 - 250, height / 2 - 200, 500, 400, 20);
+    // Cập nhật logo effects
+    this.updateLogoEffects();
     
-    // Title
-    this.add.text(width / 2, height / 2 - 160, 'SETTINGS', {
-      font: '32px Arial',
-      fill: '#ffd700',
-      fontWeight: 'bold'
-    }).setOrigin(0.5);
+    // Cập nhật character effects
+    this.characterSprites.forEach(({ sprite, shadow, char }) => {
+      this.updateCharacterEffects(sprite, shadow, char);
+    });
     
-    // Settings options
-    const settings = [
-      { key: 'characterRotation', label: 'Character Rotation', type: 'boolean' },
-      { key: 'particleIntensity', label: 'Particle Effects', type: 'select', options: ['low', 'medium', 'high', 'extreme'] },
-      { key: 'backgroundParallax', label: 'Background Parallax', type: 'boolean' },
-      { key: 'characterFloat', label: 'Character Float', type: 'boolean' },
-      { key: 'screenShake', label: 'Screen Shake', type: 'boolean' },
-      { key: 'glowEffects', label: 'Glow Effects', type: 'boolean' },
-      { key: 'transitionStyle', label: 'Transition Style', type: 'select', options: ['zoom', 'fade', 'slide', 'spiral'] }
-    ];
+    // Cập nhật character rotation
+    this.setupCharacterRotation();
     
-    const startY = height / 2 - 120;
-    const spacing = 35;
+    // Cập nhật play button effects
+    this.updatePlayButtonEffects();
     
-    settings.forEach((setting, index) => {
-      const y = startY + index * spacing;
+    // Cập nhật background particles
+    this.createBackgroundParticles();
+    
+    // Cập nhật button glow
+    this.updateButtonGlow();
+  }
+  
+  updateButtonGlow() {
+    if (this.buttonGlow) {
+      this.buttonGlow.destroy();
+      this.buttonGlow = null;
+    }
+    
+    if (window.GameSettings.effects.glowEffects && this.playBtn) {
+      const { width, height } = this.sys.game.canvas;
+      this.buttonGlow = this.add.graphics();
+      this.buttonGlow.fillStyle(0xffd700, 0.3);
+      this.buttonGlow.fillCircle(width / 2, height - 100, 80);
+      this.buttonGlow.setDepth(5);
       
-      // Label
-      this.add.text(width / 2 - 200, y, setting.label, {
-        font: '18px Arial',
-        fill: '#ffffff'
+      this.tweens.add({
+        targets: this.buttonGlow,
+        alpha: { from: 0.3, to: 0.1 },
+        scale: { from: 1, to: 1.5 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
       });
-      
-      if (setting.type === 'boolean') {
-        this.createToggle(width / 2 + 100, y, setting.key);
-      } else if (setting.type === 'select') {
-        this.createSelect(width / 2 + 100, y, setting.key, setting.options);
-      }
-    });
-    
-    // Close button
-    const closeBtn = this.add.text(width / 2, height / 2 + 150, 'CLOSE', {
-      font: '24px Arial',
-      fill: '#ffd700',
-      fontWeight: 'bold'
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    
-    closeBtn.on('pointerdown', () => {
-      this.scene.resume("StartScene");
-      this.scene.stop();
-    });
-    
-    // Apply button
-    const applyBtn = this.add.text(width / 2, height / 2 + 120, 'APPLY & RESTART', {
-      font: '20px Arial',
-      fill: '#00ff00',
-      fontWeight: 'bold'
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    
-    applyBtn.on('pointerdown', () => {
-      this.scene.stop();
-      this.scene.start("StartScene");
-    });
+    }
   }
   
-  createToggle(x, y, key) {
-    const isOn = window.GameSettings.effects[key];
+  // Cleanup khi scene bị destroy
+  destroy() {
+    // Dừng tất cả events
+    if (this.rotationEvent) {
+      this.rotationEvent.destroy();
+    }
     
-    const toggle = this.add.graphics();
-    toggle.fillStyle(isOn ? 0x00ff00 : 0x666666, 1);
-    toggle.fillRoundedRect(x, y - 10, 60, 20, 10);
-    toggle.setInteractive(new Phaser.Geom.Rectangle(x, y - 10, 60, 20), Phaser.Geom.Rectangle.Contains);
+    // Xóa event listeners
+    this.events.off('wake', this.onWakeFromSettings);
     
-    const knob = this.add.graphics();
-    knob.fillStyle(0xffffff, 1);
-    knob.fillCircle(isOn ? x + 45 : x + 15, y, 8);
-    
-    toggle.on('pointerdown', () => {
-      window.GameSettings.effects[key] = !window.GameSettings.effects[key];
-      const newIsOn = window.GameSettings.effects[key];
-      
-      toggle.clear();
-      toggle.fillStyle(newIsOn ? 0x00ff00 : 0x666666, 1);
-      toggle.fillRoundedRect(x, y - 10, 60, 20, 10);
-      
-      knob.clear();
-      knob.fillStyle(0xffffff, 1);
-      knob.fillCircle(newIsOn ? x + 45 : x + 15, y, 8);
-    });
-  }
-  
-  createSelect(x, y, key, options) {
-    const currentValue = window.GameSettings.effects[key];
-    const currentIndex = options.indexOf(currentValue);
-    
-    const selectBg = this.add.graphics();
-    selectBg.fillStyle(0x333333, 1);
-    selectBg.fillRoundedRect(x, y - 12, 120, 24, 5);
-    selectBg.setInteractive(new Phaser.Geom.Rectangle(x, y - 12, 120, 24), Phaser.Geom.Rectangle.Contains);
-    
-    const selectText = this.add.text(x + 60, y, currentValue.toUpperCase(), {
-      font: '16px Arial',
-      fill: '#ffffff'
-    }).setOrigin(0.5);
-    
-    selectBg.on('pointerdown', () => {
-      const nextIndex = (currentIndex + 1) % options.length;
-      const nextValue = options[nextIndex];
-      window.GameSettings.effects[key] = nextValue;
-      selectText.setText(nextValue.toUpperCase());
-    });
+    super.destroy();
   }
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
-import StartScene, { SettingsScene } from "./scenes/StartScene";
+import StartScene from "./scenes/StartScene";
+import SettingsScene from "./scenes/SettingsScene";
 import QuizScene from "./scenes/QuizScene";
 // Import other scenes as you build them
 
@@ -16,7 +17,7 @@ const PhaserGame = ({ sceneKey }) => {
       height: 1200,
       parent: "phaser-container",
       transparent: true,
-      scene: [StartScene, QuizScene, { SettingsScene }], // Add other scenes here
+      scene: [StartScene, QuizScene,  SettingsScene ], // Add other scenes here
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     });
 
