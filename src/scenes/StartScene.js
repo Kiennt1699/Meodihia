@@ -161,27 +161,20 @@ export default class StartScene extends Phaser.Scene {
   }
 
   create() {
-    // Khởi tạo settings backup để theo dõi thay đổi
     this.lastSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
     
-    // Khởi tạo background music với volume từ settings
     this.initializeMusic();
     
     const { width, height } = this.sys.game.canvas;
     
-    // Background với conditional parallax
     this.createBackground();
     
-    // Conditional background particles
     this.createBackgroundParticles();
     
-    // Logo với enhanced entrance
     this.createLogo();
     
-    // Enhanced characters
     this.createCharacters();
     
-    // Settings button
     this.createSettingsButton();
     
     // Lắng nghe sự kiện khi quay lại từ SettingsScene
@@ -612,7 +605,6 @@ export default class StartScene extends Phaser.Scene {
     
     this.dynamicElements.push(this.playBtn);
     
-    // Button entrance
     this.tweens.add({
       targets: this.playBtn,
       y: height - 100,
@@ -672,7 +664,6 @@ export default class StartScene extends Phaser.Scene {
         ease: 'Sine.easeInOut',
       });
     } else {
-      // Reset về vị trí và scale cố định
       this.tweens.add({
         targets: this.playBtn,
         y: this.sys.game.canvas.height - 100,
@@ -700,7 +691,6 @@ export default class StartScene extends Phaser.Scene {
       ease: 'Power2'
     });
     
-    // Transition effects dựa theo settings
     this.applyTransitionEffect();
     
     // Screen flash effect
@@ -755,14 +745,12 @@ export default class StartScene extends Phaser.Scene {
   createSettingsButton() {
     const { width, height } = this.sys.game.canvas;
     
-    // Settings button ở góc trên-phải
     this.settingsBtn = this.add.image(width - 60, 60, "settings")
       .setInteractive({ useHandCursor: true })
       .setScale(0.6)
       .setDepth(100)
       .setAlpha(0.8);
     
-    // Hover effects
     this.settingsBtn.on("pointerover", () => {
       this.tweens.add({
         targets: this.settingsBtn,
@@ -789,15 +777,12 @@ export default class StartScene extends Phaser.Scene {
     });
   }
   
-  // Hàm được gọi khi quay lại từ SettingsScene
   onWakeFromSettings() {
-    // Cập nhật tất cả hiệu ứng dựa theo settings mới
     this.updateAllEffects();
     this.lastSettings = JSON.parse(JSON.stringify(window.GameSettings.effects));
   }
   
   updateAllEffects() {
-    // Cập nhật music volume
     if (this.musicInstance && this.musicInstance.isPlaying) {
       this.tweens.add({
         targets: this.musicInstance,
@@ -807,10 +792,8 @@ export default class StartScene extends Phaser.Scene {
       });
     }
     
-    // Cập nhật background parallax
     this.updateBackgroundParallax();
     
-    // Cập nhật logo effects
     this.updateLogoEffects();
     
     // Cập nhật character effects
@@ -818,16 +801,12 @@ export default class StartScene extends Phaser.Scene {
       this.updateCharacterEffects(sprite, shadow, char);
     });
     
-    // Cập nhật character rotation
     this.setupCharacterRotation();
-    
-    // Cập nhật play button effects
+
     this.updatePlayButtonEffects();
     
-    // Cập nhật background particles
     this.createBackgroundParticles();
     
-    // Cập nhật button glow
     this.updateButtonGlow();
   }
   

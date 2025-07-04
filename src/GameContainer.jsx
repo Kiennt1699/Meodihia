@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import StartScene from "./scenes/StartScene";
 import SettingsScene from "./scenes/SettingsScene";
 import QuizScene from "./scenes/QuizScene";
+import MemoryCardScene from "./scenes/MemoryCardScene";
 // Import other scenes as you build them
 
 const PhaserGame = ({ sceneKey }) => {
@@ -17,7 +18,7 @@ const PhaserGame = ({ sceneKey }) => {
       height: 1200,
       parent: "phaser-container",
       transparent: true,
-      scene: [StartScene, QuizScene,  SettingsScene ], // Add other scenes here
+      scene: [StartScene, QuizScene,  SettingsScene, MemoryCardScene ], // Add other scenes here
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     });
 
