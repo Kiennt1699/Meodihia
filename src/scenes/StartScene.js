@@ -42,7 +42,7 @@ export default class StartScene extends Phaser.Scene {
     this.load.image("kitty", "assets/s1_kitty.png");
     this.load.image("perro", "assets/s1_perro.png");
     this.load.image("playnow", "assets/btn_playnow.png");
-    this.load.image("settings", "assets/arrow_right.png");
+    this.load.image("settings", "assets/btn_settings.png");
     this.load.audio('bgm', 'assets/bgm.mp3');
     this.load.audio('ui-click', 'assets/ui-click.mp3'); // Để phối hợp với SettingsScene
   }

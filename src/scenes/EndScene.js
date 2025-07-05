@@ -74,9 +74,9 @@ export default class EndScene extends Phaser.Scene {
 
     // Background and logo
     this.add.image(centerX, centerY, "bg1").setDisplaySize(canvasWidth, canvasHeight);
-    this.add.image(centerX, 80, "logo").setScale(0.5);
+    this.add.image(centerX, 70, "logo").setScale(0.6);
 
-    // Result text (spaced below logo)
+    // Result text (positioned below logo with more spacing)
     this.resultText = this.add.text(centerX, 160,
       this.isWin
         ? "Congratulations!\nYou've matched all the pairs"
@@ -88,85 +88,117 @@ export default class EndScene extends Phaser.Scene {
         color: "#ffe600",
         align: "center",
         stroke: "#000",
-        strokeThickness: 6,
+        strokeThickness: 4,
         shadow: { offsetX: 2, offsetY: 2, color: "#000", blur: 4, fill: true },
         wordWrap: { width: Math.round(canvasWidth * 0.8) }
       }
-    ).setOrigin(0.5, 0.5);
+    ).setOrigin(0.5, 0.25);
 
-    // TVC frame and video (centered, spaced below result text)
-    const tvcFrameY = this.resultText.y + 120;
-    const tvcFrameWidth = Math.round(canvasWidth * 0.55); 
-    const tvcFrameHeight = Math.round(canvasHeight * 0.22);
+    // TVC frame and video (smaller size and moved closer to result text)
+    const tvcFrameY = this.resultText.y + 250; // Closer to result text
+    const tvcFrameWidth = Math.round(canvasWidth * 0.65); // Smaller frame
+    const tvcFrameHeight = Math.round(tvcFrameWidth * 0.7); // Better aspect ratio for frame
+    
     this.add.image(centerX, tvcFrameY, "tvc_frame")
       .setDisplaySize(tvcFrameWidth, tvcFrameHeight)
       .setDepth(1);
 
-    const videoPadding = 24;
-    const videoWidth = tvcFrameWidth - videoPadding * 2;
-    const videoHeight = tvcFrameHeight - videoPadding * 2;
+    // Video sized to fit properly within frame with proper padding
+    const videoPadding = 100; // Proper padding to ensure video stays within frame
+    const videoWidth = tvcFrameWidth - videoPadding * 3.2;
+    const videoHeight = tvcFrameHeight - videoPadding * 1.3;
+    
     this.phaserVideo = this.add.video(centerX, tvcFrameY, "pib_video")
       .setDisplaySize(videoWidth, videoHeight)
       .setDepth(2)
       .setOrigin(0.5, 0.5);
+    
+    // Video controls - manual play/pause instead of auto-reload
     this.phaserVideo.play(false); 
     this.phaserVideo.setPaused(false);
     this.phaserVideo.setMute(false);
 
+    // Reload button (manual replay)
     this.reloadBtn = this.add.image(centerX, tvcFrameY, "btn_reload")
       .setInteractive()
-      .setScale(0.8)
+      .setScale(0.5)
       .setDepth(4)
       .setVisible(false);
+    
     this.reloadBtn.on("pointerdown", () => {
       this.phaserVideo.setCurrentTime(0);
       this.phaserVideo.play(false);
       this.reloadBtn.setVisible(false);
     });
 
-    this.muteBtn = this.add.image(centerX + tvcFrameWidth / 2 - 30, tvcFrameY - tvcFrameHeight / 2 + 30, "btn_unmute")
+    // Mute button (positioned at top-right corner of video frame)
+    this.muteBtn = this.add.image(
+      centerX + tvcFrameWidth / 2 - 28, 
+      tvcFrameY - tvcFrameHeight / 2 + 28, 
+      this.isMuted ? "btn_mute" : "btn_unmute"
+    )
       .setInteractive()
-      .setScale(0.6)
+      .setScale(0.4)
       .setDepth(4);
+    
     this.muteBtn.on("pointerdown", () => {
       this.isMuted = !this.isMuted;
       this.phaserVideo.setMute(this.isMuted);
       this.muteBtn.setTexture(this.isMuted ? "btn_mute" : "btn_unmute");
     });
+
+    // Show reload button when video completes
     this.phaserVideo.on("complete", () => {
       this.reloadBtn.setVisible(true);
     });
+
+    // Hide reload button when video starts playing
     this.phaserVideo.on("play", () => {
       this.reloadBtn.setVisible(false);
     });
 
-    // Character Card Carousel (move further down for better balance)
-    const cardY = tvcFrameY + tvcFrameHeight / 2 + 250 + Math.round(canvasHeight * 0.12);
-    this.createCarousel(centerX, cardY, Math.round(canvasWidth * 0.45), Math.round(canvasHeight * 0.22));
+    // Character Card Carousel (larger size and prominent position)
+    const cardY = tvcFrameY + tvcFrameHeight / 2 + 80;
+    const cardWidth = Math.round(canvasWidth * 0.5); // Larger card size
+    const cardHeight = Math.round(cardWidth * 0.6); // Better proportions
+    this.createCarousel(centerX, cardY, cardWidth, cardHeight);
 
-    // Buttons (centered below card)
-    this.createButtons(centerX, canvasHeight - 90);
+    // Buttons (positioned at bottom with proper spacing)
+    const buttonY = canvasHeight - 70;
+    this.createButtons(centerX, buttonY);
   }
 
   createCarousel(centerX, cardY, cardW, cardH) {
-    // Card image (centered)
+    // Card image (centered and prominent)
     this.charImg = this.add.image(centerX, cardY, CHARACTERS[0].key)
       .setDisplaySize(cardW, cardH)
       .setDepth(3)
-      .setOrigin(0.5, 0.5);
+      .setScale(1.02)
+      .setOrigin(0.5, 0);
+      
 
-    // Arrows (left/right of card)
-    const arrowOffset = cardW / 2 + 40;
+    // Arrows (positioned to the sides of card with proper spacing)
+    const arrowOffset = cardW / 2 + 150; // More space for larger cards
     this.arrowLeft = this.add.image(centerX - arrowOffset, cardY, "arrow_left")
       .setInteractive()
       .setScale(1.2)
+      .setOrigin(0.5, -0.35)
       .setDepth(4);
+    
     this.arrowRight = this.add.image(centerX + arrowOffset, cardY, "arrow_right")
       .setInteractive()
       .setScale(1.2)
+      .setOrigin(0.5, -0.35)
       .setDepth(4);
+    
     this.arrowLeft.on("pointerdown", () => this.switchChar(-1));
     this.arrowRight.on("pointerdown", () => this.switchChar(1));
+
+    // Add hover effects for arrows
+    this.arrowLeft.on("pointerover", () => this.arrowLeft.setScale(1.3));
+    this.arrowLeft.on("pointerout", () => this.arrowLeft.setScale(1.2));
+    this.arrowRight.on("pointerover", () => this.arrowRight.setScale(1.3));
+    this.arrowRight.on("pointerout", () => this.arrowRight.setScale(1.2));
   }
 
   switchChar(dir) {
@@ -177,16 +209,23 @@ export default class EndScene extends Phaser.Scene {
 
   createButtons(centerX, btnY) {
     // Play Again (left)
-    this.playAgainBtn = this.add.image(centerX - 110, btnY, "btn_playagain")
+    this.playAgainBtn = this.add.image(centerX - 150, btnY, "btn_playagain")
       .setInteractive()
-      .setScale(1.0);
+      .setScale(0.9);
+    
     this.playAgainBtn.on("pointerdown", () => {
       this.scene.start("MemoryCardScene");
     });
+
     // Discover More (right)
-    this.discoverMoreBtn = this.add.image(centerX + 110, btnY, "btn_discovermore")
+    this.discoverMoreBtn = this.add.image(centerX + 150, btnY, "btn_discovermore")
       .setInteractive()
-      .setScale(1.0);
-    // No action for discover more button
+      .setScale(0.9);
+    
+    // Add hover effects for buttons
+    this.playAgainBtn.on("pointerover", () => this.playAgainBtn.setScale(0.85));
+    this.playAgainBtn.on("pointerout", () => this.playAgainBtn.setScale(0.8));
+    this.discoverMoreBtn.on("pointerover", () => this.discoverMoreBtn.setScale(0.85));
+    this.discoverMoreBtn.on("pointerout", () => this.discoverMoreBtn.setScale(0.8));
   }
 }

@@ -592,10 +592,12 @@ export default class MemoryCardScene extends Phaser.Scene {
 
   finishGame() {
     this.timerEvent?.remove();
-    
+    // Stop background music before moving to EndScene
+    if (this.sound.get('bgm')) {
+      this.sound.get('bgm').stop();
+    }
     // Victory celebration
     this.createVictoryEffects();
-    
     this.time.delayedCall(1500, () => {
       this.scene.start("EndScene", { isWin: true });
     });
@@ -657,7 +659,10 @@ export default class MemoryCardScene extends Phaser.Scene {
     this.locked = true;
     this.timeUpOverlay.setVisible(true).setAlpha(0);
     this.timeUpText.setVisible(true).setAlpha(0).setScale(0.3);
-    
+    // Stop background music before moving to EndScene
+    if (this.sound.get('bgm')) {
+      this.sound.get('bgm').stop();
+    }
     // Dramatic entrance
     this.tweens.add({
       targets: this.timeUpOverlay,
@@ -665,7 +670,6 @@ export default class MemoryCardScene extends Phaser.Scene {
       duration: 400,
       ease: 'Power2.easeOut'
     });
-    
     this.tweens.add({
       targets: this.timeUpText,
       alpha: 1,
@@ -675,7 +679,6 @@ export default class MemoryCardScene extends Phaser.Scene {
       ease: 'Back.easeOut',
       delay: 200
     });
-    
     // Text pulse
     this.tweens.add({
       targets: this.timeUpText,
@@ -686,7 +689,6 @@ export default class MemoryCardScene extends Phaser.Scene {
       repeat: 2,
       ease: 'Power2'
     });
-    
     this.timerText.setVisible(false);
     this.time.delayedCall(2000, () => {
       this.scene.start("EndScene", { isWin: false });
