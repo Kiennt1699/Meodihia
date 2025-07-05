@@ -44,7 +44,7 @@ export default class StartScene extends Phaser.Scene {
     this.load.image("playnow", "assets/btn_playnow.png");
     this.load.image("settings", "assets/btn_settings.png");
     this.load.audio('bgm', 'assets/bgm.mp3');
-    this.load.audio('ui-click', 'assets/ui-click.mp3'); // Để phối hợp với SettingsScene
+    this.load.audio('ui-click', 'assets/ui-click.mp3');
   }
 
   createLoadingBar() {
@@ -62,7 +62,6 @@ export default class StartScene extends Phaser.Scene {
       outerGlow.fillStyle(0xffd700, 0.3);
       outerGlow.fillRoundedRect(width / 4 - 15, height / 2 - 15, width / 2 + 30, 60, 30);
       
-      // Thêm hiệu ứng nhấp nháy cho glow
       this.tweens.add({
         targets: outerGlow,
         alpha: { from: 0.3, to: 0.1 },
@@ -136,8 +135,25 @@ export default class StartScene extends Phaser.Scene {
       },
       callbackScope: this,
     });
+    this.creditText = this.add.text(width / 2, height - 24, 'Made by Chum', {
+      font: '16px Arial',
+      color: '#fff',
+      fontStyle: 'italic',
+      align: 'center',
+      stroke: '#000',
+      strokeThickness: 2,
+      shadow: { offsetX: 1, offsetY: 1, color: '#000', blur: 2, fill: true },
+    }).setOrigin(0.5, 1);
     
-    // Remove loading elements
+    this.time.delayedCall(1000, () => {
+      this.tweens.add({
+        targets: this.creditText,
+        alpha: 0,
+        duration: 400,
+        onComplete: () => this.creditText.setVisible(false)
+      });
+    });
+    
     this.time.delayedCall(1800, () => {
       const elementsToFade = [loadingBar, loadingBarBg, loadingText, ...particles];
       if (outerGlow) elementsToFade.push(outerGlow);

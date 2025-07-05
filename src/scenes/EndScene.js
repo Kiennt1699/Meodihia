@@ -72,7 +72,6 @@ export default class EndScene extends Phaser.Scene {
     const canvasWidth = this.cameras.main.width;
     const canvasHeight = this.cameras.main.height;
 
-    // Background and logo
     this.add.image(centerX, centerY, "bg1").setDisplaySize(canvasWidth, canvasHeight);
     this.add.image(centerX, 70, "logo").setScale(0.6);
 
@@ -104,7 +103,7 @@ export default class EndScene extends Phaser.Scene {
       .setDepth(1);
 
     // Video sized to fit properly within frame with proper padding
-    const videoPadding = 100; // Proper padding to ensure video stays within frame
+    const videoPadding = 100;
     const videoWidth = tvcFrameWidth - videoPadding * 3.2;
     const videoHeight = tvcFrameHeight - videoPadding * 1.3;
     
@@ -131,7 +130,7 @@ export default class EndScene extends Phaser.Scene {
       this.reloadBtn.setVisible(false);
     });
 
-    // Mute button (positioned at top-right corner of video frame)
+    // Mute/Unmute button (single button, always reflects current mute state)
     this.muteBtn = this.add.image(
       centerX + tvcFrameWidth / 2 - 28, 
       tvcFrameY - tvcFrameHeight / 2 + 28, 
@@ -144,17 +143,17 @@ export default class EndScene extends Phaser.Scene {
     this.muteBtn.on("pointerdown", () => {
       this.isMuted = !this.isMuted;
       this.phaserVideo.setMute(this.isMuted);
-      this.muteBtn.setTexture(this.isMuted ? "btn_mute" : "btn_unmute");
+      this.muteBtn.setTexture(this.isMuted ? "btn_unmute" : "btn_mute");
     });
 
-    // Show reload button when video completes
+    // Ensure mute button always reflects current state after video events
     this.phaserVideo.on("complete", () => {
       this.reloadBtn.setVisible(true);
+      this.muteBtn.setTexture(this.isMuted ? "btn_unmute" : "btn_mute");
     });
-
-    // Hide reload button when video starts playing
     this.phaserVideo.on("play", () => {
       this.reloadBtn.setVisible(false);
+      this.muteBtn.setTexture(this.isMuted ? "btn_unmute" : "btn_mute");
     });
 
     // Character Card Carousel (larger size and prominent position)
