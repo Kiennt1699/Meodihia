@@ -830,7 +830,6 @@ export default class StartScene extends Phaser.Scene {
     }
   }
   
-  // Cleanup khi scene bị destroy
   destroy() {
     // Dừng tất cả events
     if (this.rotationEvent) {
