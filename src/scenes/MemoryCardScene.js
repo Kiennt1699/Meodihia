@@ -32,6 +32,7 @@ export default class MemoryCardScene extends Phaser.Scene {
     this.load.image("btn_start", "assets/btn_start.png");
     this.load.image("cardback", "assets/cardback.png");
     this.load.image("timeplate", "assets/timeplate.png");
+    this.load.image("logo", "assets/logo.png");
 
     CARD_PAIRS.forEach(pair => {
       this.load.image(pair.key, `assets/${pair.img}`);
@@ -44,6 +45,9 @@ export default class MemoryCardScene extends Phaser.Scene {
     // Background with parallax effect
     this.bg = this.add.image(400, 600, "bg2").setDisplaySize(800, 1200);
     this.createFloatingStars();
+
+    // Add logo at the top center
+    this.logo = this.add.image(400, 80, "logo").setDepth(5).setScale(0.7);
 
     // Tutorial overlay with entrance animation
     this.tutorial = this.add.image(400, 600, "tutorial").setDepth(10).setAlpha(0);
@@ -84,21 +88,19 @@ export default class MemoryCardScene extends Phaser.Scene {
     });
 
     // Enhanced timer with glow effect
-    this.timeplate = this.add.image(400, 100, "timeplate").setScale(1.2).setVisible(false);
-    this.timerText = this.add.text(400, 100, "30", {
+    this.timeplate = this.add.image(400, 230, "timeplate").setScale(1.2).setVisible(false);
+    this.timerText = this.add.text(400, 230, "30", {
       font: "48px Arial",
       color: "#fff",
       fontStyle: "bold",
     }).setOrigin(0.5).setDepth(2).setVisible(false);
-
-    // Timer warning glow
-    this.timerGlow = this.add.circle(400, 100, 80, 0xff0000, 0).setVisible(false);
+    this.timerGlow = this.add.circle(400, 200, 80, 0xff0000, 0).setVisible(false);
 
     // Circles with enhanced animations
     this.circles = [];
     for (let i = 0; i < 6; i++) {
       const x = 180 + i * 90;
-      const y = 1100;
+      const y = 1120;
       const pair = CARD_PAIRS[i];
       const circle = this.add.image(x, y, `${pair.key}_circle`).setScale(0.8).setVisible(true);
       const reveal = this.add.image(x, y, `${pair.key}_reveal`).setScale(0.8).setVisible(false);
@@ -246,7 +248,7 @@ export default class MemoryCardScene extends Phaser.Scene {
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 4; col++) {
         const x = 200 + col * 130;
-        const y = 320 + row * 180;
+        const y = 420 + row * 180;
         const data = cardData[idx];
         const card = this.createCard(x, y, data.key, data.img);
         this.cards.push(card);
