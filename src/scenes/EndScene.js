@@ -52,18 +52,18 @@ export default class EndScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("bg1", "public/assets/bg_1.jpg");
-    this.load.image("logo", "public/assets/logo.png");
-    this.load.image("tvc_frame", "public/assets/tvc_frame.png");
-    this.load.image("arrow_left", "public/assets/arrow_left.png");
-    this.load.image("arrow_right", "public/assets/arrow_right.png");
-    this.load.image("btn_playagain", "public/assets/btn_playagain.png");
-    this.load.image("btn_discovermore", "public/assets/btn_discover more.png");
-    this.load.image("btn_mute", "public/assets/btn_mute.png");
-    this.load.image("btn_unmute", "public/assets/btn_unmute.png");
-    this.load.image("btn_reload", "public/assets/btn_reload.png");
-    this.load.video("pib_video", "public/assets/video/tvc_video_pussinboots.mp4", "loadeddata", false, true);
-    CHARACTERS.forEach(c => this.load.image(c.key, `public/assets/${c.img}`));
+    this.load.image("bg1", "assets/bg_1.jpg");
+    this.load.image("logo", "assets/logo.png");
+    this.load.image("tvc_frame", "assets/tvc_frame.png");
+    this.load.image("arrow_left", "assets/arrow_left.png");
+    this.load.image("arrow_right", "assets/arrow_right.png");
+    this.load.image("btn_playagain", "assets/btn_playagain.png");
+    this.load.image("btn_discovermore", "assets/btn_discover more.png");
+    this.load.image("btn_mute", "assets/btn_mute.png");
+    this.load.image("btn_unmute", "assets/btn_unmute.png");
+    this.load.image("btn_reload", "assets/btn_reload.png");
+    this.load.video("pib_video", "assets/video/tvc_video_pussinboots.mp4", "loadeddata", false, true);
+    CHARACTERS.forEach(c => this.load.image(c.key, `assets/${c.img}`));
   }
 
   create() {

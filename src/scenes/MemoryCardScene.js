@@ -27,16 +27,16 @@ export default class MemoryCardScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("bg2", "public/assets/bg_2.jpg");
-    this.load.image("tutorial", "public/assets/game2_tutorial.png");
-    this.load.image("btn_start", "public/assets/btn_start.png");
-    this.load.image("cardback", "public/assets/cardback.png");
-    this.load.image("timeplate", "public/assets/timeplate.png");
+    this.load.image("bg2", "assets/bg_2.jpg");
+    this.load.image("tutorial", "assets/game2_tutorial.png");
+    this.load.image("btn_start", "assets/btn_start.png");
+    this.load.image("cardback", "assets/cardback.png");
+    this.load.image("timeplate", "assets/timeplate.png");
 
     CARD_PAIRS.forEach(pair => {
-      this.load.image(pair.key, `public/assets/${pair.img}`);
-      this.load.image(`${pair.key}_circle`, `public/assets/${pair.circle}`);
-      this.load.image(`${pair.key}_reveal`, `public/assets/${pair.reveal}`);
+      this.load.image(pair.key, `assets/${pair.img}`);
+      this.load.image(`${pair.key}_circle`, `assets/${pair.circle}`);
+      this.load.image(`${pair.key}_reveal`, `assets/${pair.reveal}`);
     });
   }
 
