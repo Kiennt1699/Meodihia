@@ -1,12 +1,80 @@
-# React + Vite
+# PUSS-IN-BOOTS: Memory Card Game
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web-based memory card game inspired by the movie "Puss in Boots". Built with **Phaser** for game logic, **React** for UI, and **Vite** for fast development and build.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Memory card matching gameplay with animated effects
+- Character carousel and quiz scenes
+- Background music and sound effects
+- Responsive design for desktop and mobile
+- Video and image assets from the movie
 
-## Expanding the ESLint configuration
+## Folder Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+PUSS-IN-BOOTS/
+├── public/
+│   └── assets/         # All images, audio, and video assets
+├── src/
+│   ├── scenes/         # Phaser game scenes (MemoryCardScene, EndScene, etc.)
+│   ├── App.jsx         # React entry point
+│   └── main.jsx        # App bootstrap
+├── index.html          # Main HTML file
+├── package.json        # Project dependencies
+└── vite.config.js      # Vite configuration
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or newer recommended)
+- npm
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Run in development mode
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) to view the game in your browser.
+
+### Build for production
+
+```bash
+npm run build
+```
+
+The output will be in the `dist/` folder. Deploy the contents of `dist/` to your static web server.
+
+## Deployment Notes
+
+- All static assets (images, audio, video) must be referenced as `assets/...` in your Phaser code, **not** `public/assets/...`.
+- On mobile browsers, background music will only play after a user gesture (tap/click). This is a browser security restriction.
+
+## Troubleshooting
+
+- **Images or audio not loading after deploy:**
+  - Check that asset paths in your code use `assets/` (not `public/assets/`).
+  - Ensure the `assets/` folder is present in your deployed `dist/` directory.
+  - Filenames are case-sensitive on most servers.
+- **No background music on mobile:**
+  - Music must be started in a user interaction handler (e.g., button click), not automatically.
+
+## Credits
+
+- Game logic: Phaser
+- UI: React
+- Build tool: Vite
+- Assets: DreamWorks "Puss in Boots" (for educational/demo use only)
+
+---
+
+For questions or contributions, please open an issue or pull request.
